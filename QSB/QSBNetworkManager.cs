@@ -36,6 +36,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using QSB.API;
 using UnityEngine;
+using QSB.HUD;
+
 
 namespace QSB;
 
@@ -45,6 +47,10 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 
 	public event Action OnClientConnected;
 	public event Action<TransportError, string> OnClientDisconnected;
+
+	public GameObject PlayerPrefab { get; private set; }
+	
+
 
 	public GameObject OrbPrefab { get; private set; }
 	public GameObject ShipPrefab { get; private set; }
@@ -72,6 +78,7 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 
 	public override void Awake()
 	{
+		MainThreadDispatcher.Initialize();
 		gameObject.SetActive(false);
 
 		{
@@ -158,6 +165,7 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 		spawnPrefabs.Add(StationaryProbeLauncherPrefab);
 
 		ConfigureNetworkManager();
+
 	}
 
 	public static void UpdateTransport()
@@ -337,6 +345,19 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 				() => new RequestStateResyncMessage().Send());
 		}
 
+		if (QSBCore.IsHost)
+		{
+			try
+			{
+				WebAdminServer.Start(8035);
+				MultiplayerHUDManager.Instance.WriteSystemMessage("Thank you for playing QSB Modified!", Color.blue);
+			}
+			catch (Exception e)
+			{
+				DebugLog.ToConsole("[WebAdmin] Failed to start: " + e, MessageType.Error);
+			}
+		}
+
 		_everConnected = true;
 	}
 
@@ -368,6 +389,18 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 		}
 
 		_everConnected = false;
+
+		if (QSBCore.IsHost)
+		{
+			try
+			{
+				WebAdminServer.Stop();
+			}
+			catch (Exception e)
+			{
+				DebugLog.ToConsole("[WebAdmin] Failed to stop: " + e, MessageType.Error); // bruh
+			}
+		}
 	}
 
 	public override void OnClientDisconnect()

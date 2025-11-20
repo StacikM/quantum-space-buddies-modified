@@ -79,4 +79,7 @@
     <ProjectReference Include="..\QSBPatcher\QSBPatcher.csproj" />
     <ProjectReference Include="..\MirrorWeaver\MirrorWeaver.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Assets\WebAdmin\" />
+  </ItemGroup>
 </Project>

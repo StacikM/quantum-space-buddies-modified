@@ -174,13 +174,13 @@ public static class QSBMessageManager
 			return;
 		}
 
-		if (msg 
+		if (msg
 			is ServerTimeMessage
 			or SocketStateChangeMessage
-			or OwnerQueueMessage 
-			or GeyserMessage 
-			or MeteorPreLaunchMessage 
-			or MeteorLaunchMessage 
+			or OwnerQueueMessage
+			or GeyserMessage
+			or MeteorPreLaunchMessage
+			or MeteorLaunchMessage
 			or FragmentIntegrityMessage
 			or LinkMessage
 			or ShipLogFactSaveMessage

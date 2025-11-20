@@ -172,6 +172,22 @@ public class MultiplayerHUDManager : MonoBehaviour, IAddComponentOnStart
 
 	ListStack<string> previousMessages = new(true);
 
+	public void ClearAllChatMessages()
+	{
+		_messages.Clear();
+
+
+		if (_lines != null)
+		{
+			Array.Clear(_lines, 0, _lines.Length);
+		}
+
+		if (_textChat != null)
+		{
+			_textChat.Find("Messages").Find("Message").GetComponent<Text>().text = ""; // i have no idea what im doing but it works
+		}
+	}
+
 	private void Update()
 	{
 		if (!QSBWorldSync.AllObjectsReady || _playerList == null)
@@ -230,13 +246,22 @@ public class MultiplayerHUDManager : MonoBehaviour, IAddComponentOnStart
 
 			previousMessages.Push(message);
 
-			if (QSBCore.DebugSettings.DebugMode && CommandInterpreter.InterpretCommand(message))
+			if (CommandInterpreter.InterpretCommand(message))
 			{
 				return;
 			}
-			
+
+
+			var senderId = QSBPlayerManager.LocalPlayer.PlayerId;
+			if (MuteManager.IsMuted(senderId))
+			{
+				MultiplayerHUDManager.Instance.WriteSystemMessage("You are muted and cannot send chat messages.", Color.red);
+				return;
+			}
+
 			message = $"{QSBPlayerManager.LocalPlayer.Name}: {message}";
 			new ChatMessage(message, Color.white).Send();
+
 		}
 
 		if (OWInput.IsNewlyPressed(InputLibrary.escape, InputMode.KeyboardInput) && _writingMessage)
