@@ -18,7 +18,7 @@
   "Yes": "YES",
   "No": "NO",
   "StopHostingAreYouSure": "Are you sure you want to stop hosting?\nThis will disconnect all clients and send everyone back to the main menu.",
-  "CopySteamIDToClipboard": "Hosting server.\nClients will connect using your Steam ID, which is :\n{0}\nDo you want to copy this to the clipboard?",
+  "CopySteamIDToClipboard": "Hosting server.\nClients will connect using your Steam ID, which is :\n{0}\nDo you want to copy this to the clipboard?\nWarning: your server will be publicly available to join on qsb.stacik.dev\nIf you don't want to have your server on there, after your friends joined, use the chat to say /serverlock'",
   "Connecting": "CONNECTING...",
   "OK": "OK",
   "ServerRefusedConnection": "Server refused connection.\n{0}",

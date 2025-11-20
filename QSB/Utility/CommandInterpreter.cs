@@ -55,7 +55,9 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 
 			// server ctrl
 			case "serverfreeze": FreezeServer(); break;
+			case "serverlock": FreezeServer(); break;
 			case "unserverfreeze": UnfreezeServer(); break;
+			case "unserverlock": UnfreezeServer(); break;
 
 			// utility and fun
 			case "revive": RevivePlayer(commandParts.Skip(1).ToArray()); break;
@@ -257,12 +259,6 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 	{
 		ServerFreezeManager.Freeze();
 
-		foreach (var player in QSBPlayerManager.PlayerList)
-		{
-			if (!player.IsLocalPlayer)
-				new PlayerKickMessage(player.PlayerId, "Server is now in maintenance. Please wait for the host to make the server available.").Send();
-		}
-
 		WriteToChat("Server is now frozen. Players cannot join until /unserverfreeze is used.", Color.yellow);
 	}
 
@@ -348,7 +344,7 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 
 			if (ServerFreezeManager.IsFrozen)
 			{
-				new PlayerKickMessage(player.PlayerId, "Server is in maintenance. Please wait for the host to unlock the server.").Send();
+				new PlayerKickMessage(player.PlayerId, "Server is whitelisted. Please ask the host to write /unserverfreeze").Send();
 				DebugLog.ToConsole($"[moderation] auto-kicked {player.Name} (server frozen)");
 			}
 		};

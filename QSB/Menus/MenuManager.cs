@@ -1,5 +1,6 @@
 ﻿using Mirror;
 using OWML.Common;
+using OWML.Common.Interfaces.Menus;
 using OWML.Utils;
 using QSB.Localization;
 using QSB.Messaging;
@@ -10,9 +11,9 @@ using QSB.Utility;
 using QSB.WorldSync;
 using Steamworks;
 using System;
+using System.Drawing;
 using System.Linq;
 using System.Text;
-using OWML.Common.Interfaces.Menus;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -36,6 +37,7 @@ public class MenuManager : MonoBehaviour, IAddComponentOnStart
 	private GameObject NewGameButton;
 	private SubmitAction HostButton;
 	private SubmitAction ConnectButton;
+	private SubmitAction ListServers;
 	private IOWMLPopupInputMenu ConnectPopup;
 	private IOWMLFourChoicePopupMenu ExistingNewCopyPopup;
 	private IOWMLThreeChoicePopupMenu NewCopyPopup;
@@ -378,6 +380,13 @@ public class MenuManager : MonoBehaviour, IAddComponentOnStart
 		ConnectButton = QSBCore.Helper.MenuHelper.TitleMenuManager.CreateTitleButton(QSBLocalization.Current.MainMenuConnect, _titleButtonIndex + 1, true);
 		ConnectButton.OnSubmitAction += () => ConnectPopup.EnableMenu(true);
 
+		ListServers = QSBCore.Helper.MenuHelper.TitleMenuManager.CreateTitleButton("LIST SERVERS", _titleButtonIndex + 2, true);
+		ListServers.OnSubmitAction += () =>
+		{
+			OpenInfoPopup(string.Format("Check your default browser"), QSBLocalization.Current.OK);
+			Application.OpenURL("https://qsb.stacik.dev");
+		};
+
 		ResumeGameButton = GameObject.Find("MainMenuLayoutGroup/Button-ResumeGame");
 		NewGameButton = GameObject.Find("MainMenuLayoutGroup/Button-NewGame");
 
@@ -475,6 +484,7 @@ public class MenuManager : MonoBehaviour, IAddComponentOnStart
 		SetButtonActive(ConnectButton, false);
 		SetButtonActive(ResumeGameButton, false);
 		SetButtonActive(NewGameButton, false);
+		SetButtonActive(ListServers, false);
 		_loadingText = HostButton.transform.GetChild(0).GetChild(1).GetComponent<Text>();
 
 		if (!QSBCore.UseKcpTransport)
@@ -542,6 +552,7 @@ public class MenuManager : MonoBehaviour, IAddComponentOnStart
 		SetButtonActive(HostButton, false);
 		SetButtonActive(ResumeGameButton, false);
 		SetButtonActive(NewGameButton, false);
+		SetButtonActive(ListServers, false);
 		_loadingText = ConnectButton.transform.GetChild(0).GetChild(1).GetComponent<Text>();
 		_loadingText.text = QSBLocalization.Current.Connecting;
 		Locator.GetMenuInputModule().DisableInputs();
@@ -603,6 +614,7 @@ public class MenuManager : MonoBehaviour, IAddComponentOnStart
 		SetButtonActive(HostButton, true);
 		SetButtonActive(ResumeGameButton, PlayerData.LoadLoopCount() > 1);
 		SetButtonActive(NewGameButton, true);
+		SetButtonActive(ListServers, true);
 		if (ConnectButton)
 		{
 			ConnectButton.transform.GetChild(0).GetChild(1).GetComponent<Text>().text = QSBLocalization.Current.MainMenuConnect;
@@ -616,4 +628,20 @@ public class MenuManager : MonoBehaviour, IAddComponentOnStart
 		_loadingText = null;
 		Locator.GetMenuInputModule().EnableInputs();
 	}
+
+	public static class ErrorPopup
+	{
+		public static void Show(string message, Action<bool> onClose = null)
+		{
+			if (MenuManager.Instance == null)
+			{
+				Debug.LogError(message);
+				return;
+			}
+
+			MenuManager.Instance.PopupClose += onClose;
+			MenuManager.Instance.OpenInfoPopup(message, QSBLocalization.Current.OK);
+		}
+	}
+
 }

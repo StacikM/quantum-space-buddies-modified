@@ -350,6 +350,7 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 			try
 			{
 				WebAdminServer.Start(8035);
+				LobbyReporter.RegisterLobby();
 				MultiplayerHUDManager.Instance.WriteSystemMessage("Thank you for playing QSB Modified!", Color.blue);
 			}
 			catch (Exception e)
@@ -473,6 +474,7 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 		});
 
 		base.OnStopServer();
+		LobbyReporter.DeregisterLobby();
 	}
 
 	public override void OnServerError(NetworkConnectionToClient conn, TransportError error, string reason)
@@ -486,4 +488,10 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 		DebugLog.DebugWrite($"OnClientError({error}, {reason})", MessageType.Error);
 		_lastTransportError = (error, reason);
 	}
+
+	void Update()
+	{
+		LobbyReporter.Update();
+	}
+
 }
