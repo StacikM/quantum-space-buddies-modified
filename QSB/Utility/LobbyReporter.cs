@@ -160,6 +160,32 @@ public static class LobbyReporter
 		secretKey = null;
 	}
 
+	private static async void CheckLobbyStatus()
+	{
+		if (lobbyId == null || secretKey == null) return;
+
+		try
+		{
+			var response = await http.GetStringAsync($"https://server.ctksystem.com/lobby/status/{lobbyId}/{secretKey}");
+			var status = JsonConvert.DeserializeObject<LobbyStatus>(response);
+			if (!status.exists)
+			{
+				MenuManager.ErrorPopup.Show("Your lobby has been removed from the website. Either you are banned or the backend server is in maintenance. Rejoining can help");
+				heartbeatActive = false;
+				lobbyId = null;
+				secretKey = null;
+			}
+		}
+		catch { }
+	}
+
+	private class LobbyStatus
+	{
+		public bool exists;
+		public int players;
+	}
+
+
 	// update loop
 	public static void Update()
 	{
@@ -170,6 +196,7 @@ public static class LobbyReporter
 		{
 			heartbeatTimer = 0f;
 			Heartbeat();
+			CheckLobbyStatus();
 		}
 	}
 

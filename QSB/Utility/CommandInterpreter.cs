@@ -5,6 +5,7 @@ using QSB.Messaging;
 using QSB.Player;
 using QSB.Player.Messages;
 using QSB.RespawnSync;
+using QSB.RespawnSync.Messages;
 using QSB.Utility;
 using QSB.WorldSync;
 using Steamworks;
@@ -288,10 +289,9 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 		var player = QSBPlayerManager.PlayerList.FirstOrDefault(p => p.Name.Equals(args[0], System.StringComparison.OrdinalIgnoreCase));
 		if (player == null) { WriteToChat($"Player {args[0]} not found.", Color.red); return; }
 
-		RespawnManager.Instance.OnPlayerRespawn(player);
+		new PlayerRespawnMessage(player.PlayerId).Send();
 		WriteToChat($"Revived {player.Name}", Color.green);
 	}
-
 
 	private static void ShipCommand(string[] arguments)
 	{

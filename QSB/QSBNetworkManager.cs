@@ -2,12 +2,14 @@
 using OWML.Common;
 using OWML.Utils;
 using QSB.Anglerfish.TransformSync;
+using QSB.API;
 using QSB.ClientServerStateSync;
 using QSB.DeathSync;
 using QSB.EchoesOfTheEye.AirlockSync.VariableSync;
 using QSB.EchoesOfTheEye.EclipseDoors.VariableSync;
 using QSB.EchoesOfTheEye.EclipseElevators.VariableSync;
 using QSB.EchoesOfTheEye.RaftSync.TransformSync;
+using QSB.HUD;
 using QSB.JellyfishSync.TransformSync;
 using QSB.Menus;
 using QSB.Messaging;
@@ -32,11 +34,10 @@ using QSB.Utility;
 using QSB.Utility.VariableSync;
 using QSB.WorldSync;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using QSB.API;
 using UnityEngine;
-using QSB.HUD;
 
 
 namespace QSB;
@@ -166,6 +167,7 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 
 		ConfigureNetworkManager();
 
+	
 	}
 
 	public static void UpdateTransport()

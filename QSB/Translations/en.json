@@ -48,7 +48,8 @@
   "DeathMessages": {
     "Default": [
       "{0} died",
-      "{0} was killed"
+      "{0} was killed",
+      "{0} had a heart attack"
     ],
     "Impact": [
       "{0} forgot to use retro-rockets",

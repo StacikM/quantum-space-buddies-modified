@@ -65,6 +65,13 @@ public class MultiplayerHUDManager : MonoBehaviour, IAddComponentOnStart
 		SpaceSprite = QSBCore.HUDAssetBundle.LoadAsset<Sprite>("Assets/MULTIPLAYER_UI/playerbox_space.png");
 	}
 
+	private static readonly HashSet<string> DevSteamIds = new()
+	{
+	"76561198150564286",
+	"76561199111784585",
+	"76561198088534083"
+	};
+
 	private const int LINE_COUNT = 10;
 	private const int CHAR_COUNT = 33;
 	private const float FADE_DELAY = 5f;
@@ -106,55 +113,67 @@ public class MultiplayerHUDManager : MonoBehaviour, IAddComponentOnStart
 		_messages.Push((message, color));
 
 		if (_messages.Count > LINE_COUNT)
-		{
 			_messages.PopFromBack();
-		}
 
-		var currentLineIndex = LINE_COUNT - 1;
+		int currentLineIndex = LINE_COUNT - 1;
+
+		// Clear previous lines
+		for (int i = 0; i < LINE_COUNT; i++)
+			_lines[i] = default;
 
 		foreach (var msg in _messages.Reverse())
 		{
-			var characterCount = msg.msg.Length;
-			var linesNeeded = Mathf.CeilToInt((float)characterCount / CHAR_COUNT);
-			var chunk = 0;
-			for (var i = linesNeeded - 1; i >= 0; i--)
-			{
-				if (currentLineIndex - i < 0)
-				{
-					chunk++;
-					continue;
-				}
+			string text = msg.msg;
+			int visibleCount = 0;
+			string currentLine = "";
+			List<string> lines = new List<string>();
+			bool insideTag = false;
 
-				var chunkString = string.Concat(msg.msg.Skip(CHAR_COUNT * chunk).Take(CHAR_COUNT));
-				_lines[currentLineIndex - i] = (chunkString, msg.color);
-				chunk++;
+			// Build lines counting only visible characters
+			foreach (char c in text)
+			{
+				currentLine += c;
+
+				if (c == '<') insideTag = true;
+				if (c == '>') insideTag = false;
+
+				if (!insideTag) visibleCount++;
+
+				if (visibleCount >= CHAR_COUNT)
+				{
+					lines.Add(currentLine);
+					currentLine = "";
+					visibleCount = 0;
+				}
 			}
 
-			currentLineIndex -= linesNeeded;
+			if (!string.IsNullOrEmpty(currentLine))
+				lines.Add(currentLine);
+
+			// Fill _lines bottom-up
+			for (int i = lines.Count - 1; i >= 0; i--)
+			{
+				if (currentLineIndex < 0)
+					break;
+
+				_lines[currentLineIndex] = (lines[i], msg.color);
+				currentLineIndex--;
+			}
 
 			if (currentLineIndex < 0)
-			{
 				break;
-			}
 		}
 
-		var finalText = "";
+		// Build final text with colors
+		string finalText = "";
 		foreach (var line in _lines)
 		{
-			var msgColor = ColorUtility.ToHtmlStringRGBA(line.color);
-			var msg = $"<color=#{msgColor}>{line.msg}</color>";
-
 			if (line == default)
-			{
 				finalText += Environment.NewLine;
-			}
-			else if (line.msg.Length == CHAR_COUNT + 1)
-			{
-				finalText += msg;
-			}
 			else
 			{
-				finalText += $"{msg}{Environment.NewLine}";
+				var msgColor = ColorUtility.ToHtmlStringRGBA(line.color);
+				finalText += $"<color=#{msgColor}>{line.msg}</color>{Environment.NewLine}";
 			}
 		}
 
@@ -259,8 +278,19 @@ public class MultiplayerHUDManager : MonoBehaviour, IAddComponentOnStart
 				return;
 			}
 
-			message = $"{QSBPlayerManager.LocalPlayer.Name}: {message}";
+			string steamId = SteamManager.Initialized
+				? Steamworks.SteamUser.GetSteamID().ToString()
+				: "unknown";
+
+			string prefix = "";
+			if (DevSteamIds.Contains(steamId))
+			{
+				prefix = "<color=#FF0000>[DEV]</color> "; // true sigma right there
+			}
+
+			message = $"{prefix}{QSBPlayerManager.LocalPlayer.Name}: {message}";
 			new ChatMessage(message, Color.white).Send();
+
 
 		}
 
