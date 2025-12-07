@@ -26,7 +26,7 @@
   "QSBVersionMismatch": "QSB version does not match. (Client:{0}, Server:{1})",
   "OWVersionMismatch": "Outer Wilds version does not match. (Client:{0}, Server:{1})",
   "DLCMismatch": "DLC installation state does not match. (Client:{0}, Server:{1})",
-  "GameProgressLimit": "Game has progressed too far.",
+  "GameProgressLimit": "Game has progressed too far and cannot include you in this part.",
   "AddonMismatch": "Addon mismatch. (Client:{0} addons, Server:{1} addons)",
   "PlayerJoinedTheGame": "{0} joined!",
   "PlayerLeftTheGame": "{0} left!",

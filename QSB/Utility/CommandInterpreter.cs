@@ -1,5 +1,6 @@
 ﻿using Mirror;
 using OWML.Common;
+using QSB.DeathSync.Messages;
 using QSB.HUD;
 using QSB.Messaging;
 using QSB.Player;
@@ -9,6 +10,7 @@ using QSB.RespawnSync.Messages;
 using QSB.Utility;
 using QSB.WorldSync;
 using Steamworks;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -254,7 +256,6 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 
 	#region Server Control
 
-	// this is a bit broken, sometimes players can still join sometimes not
 	// one time my friend was 454395734875349 seconds behind the server when i used it and he rejoined, don't know if its QSB or the server freeze
 	private static void FreezeServer()
 	{
@@ -276,12 +277,19 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 	private static void KillPlayer(string[] args)
 	{
 		if (args.Length == 0) return;
-		var player = QSBPlayerManager.PlayerList.FirstOrDefault(p => p.Name.Equals(args[0], System.StringComparison.OrdinalIgnoreCase));
-		if (player == null) { WriteToChat($"Player {args[0]} not found.", Color.red); return; }
+		var player = QSBPlayerManager.PlayerList
+			.FirstOrDefault(p => p.Name.Equals(args[0], StringComparison.OrdinalIgnoreCase));
+
+		if (player == null)
+		{
+			WriteToChat($"Player {args[0]} not found.", Color.red);
+			return;
+		}
 
 		WriteToChat($"Killed {player.Name}", Color.yellow);
-		new QSB.DeathSync.Messages.PlayerDeathMessage(DeathType.Default).Send();
+		new PlayerDeathMessage(player.PlayerId, DeathType.Default).Send();
 	}
+
 
 	private static void RevivePlayer(string[] args)
 	{
@@ -344,7 +352,7 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 
 			if (ServerFreezeManager.IsFrozen)
 			{
-				new PlayerKickMessage(player.PlayerId, "Server is whitelisted. Please ask the host to write /unserverfreeze").Send();
+				new PlayerKickMessage(player.PlayerId, "Server is whitelisted. Please ask the host to write /unserverfreeze").Send(); // Au revoir
 				DebugLog.ToConsole($"[moderation] auto-kicked {player.Name} (server frozen)");
 			}
 		};

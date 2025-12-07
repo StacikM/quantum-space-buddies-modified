@@ -302,6 +302,7 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 
 	public override void OnServerAddPlayer(NetworkConnectionToClient connection) // Called on the server when a client joins
 	{
+
 		DebugLog.DebugWrite("OnServerAddPlayer", MessageType.Info);
 		base.OnServerAddPlayer(connection);
 

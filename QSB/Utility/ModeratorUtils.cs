@@ -29,7 +29,7 @@ namespace QSB.Moderation
 				}
 				catch (Exception ex)
 				{
-					DebugLog.ToConsole($"[moderation] PlayerKickMessage.Send() failed: {ex.Message} (they dont have the modification installed OR have a bypass mod)", OWML.Common.MessageType.Warning);
+					DebugLog.ToConsole($"[moderation] PlayerKickMessage.Send() failed: {ex.Message} (a bypass mod)", OWML.Common.MessageType.Warning);
 				}
 
 				// 2) schedule a forceful disconnect after a short delay if they're still present

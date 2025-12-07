@@ -92,7 +92,8 @@ public class DeathPatches : QSBPatch
 			{
 				RespawnOnDeath.Instance.ResetPlayer();
 				QSBPlayerManager.LocalPlayer.IsDead = true;
-				new PlayerDeathMessage(__instance._deathType).Send();
+				var playerId = QSBPlayerManager.LocalPlayerId;
+				new PlayerDeathMessage(playerId, __instance._deathType).Send();
 				if (PlayerAttachWatcher.Current)
 				{
 					PlayerAttachWatcher.Current.DetachPlayer();

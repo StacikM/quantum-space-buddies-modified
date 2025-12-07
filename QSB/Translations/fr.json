@@ -18,22 +18,22 @@
   "Yes": "OUI",
   "No": "NON",
   "StopHostingAreYouSure": "Veux-tu vraiment arrêter l'hébergement?\n Cela déconnectera tous les clients et renverra tout le monde au menu principal.",
-  "CopySteamIDToClipboard": "Le serveur est maintenant hébergé. Les clients se connecteront en utilisant votre ID utilisateur, qui est : \n{0}\nVeux-tu copier ceci dans le presse-papier ?",
+  "CopySteamIDToClipboard": "Le serveur est maintenant hébergé. Les clients se connecteront en utilisant votre ID utilisateur, qui est : \n{0}\nVeux-tu copier ceci dans le presse-papier ?\nAttention, ton serveur sera publié sur qsb.stacik.dev, si tu ne veux pas pour des personnes rejoignent, utilise le chat pour écrire /serverlock",
   "Connecting": "CONNEXION EN COURS...",
   "OK": "D'ACCORD",
   "ServerRefusedConnection": "Le serveur a refusé la connexion.\n{0}",
-  "ClientDisconnectWithError": "Client déconnecté avec erreur!\n{0}",
+  "ClientDisconnectWithError": "Client a déconnecté avec erreur!\n{0}",
   "QSBVersionMismatch": "Les versions du QSB ne correspondent pas. (Client:{0}, Serveur:{1})",
   "OWVersionMismatch": "Les versions de Outer Wilds ne correspondent pas. (Client:{0}, Serveur:{1})",
   "DLCMismatch": "Les états d'installation du DLC ne correspondent pas. (Client:{0}, Serveur:{1})",
-  "GameProgressLimit": "Le jeu a trop progressé.",
+  "GameProgressLimit": "Le jeu a trop progressé et ne peux pas vous inclure dans cette partie.",
   "AddonMismatch": "Non-concordance des addons. (Client:{0} addons, Serveur:{1} addons)",
   "PlayerJoinedTheGame": "{0} a rejoint!",
   "PlayerLeftTheGame": "{0} est parti!",
   "PlayerWasKicked": "{0} a été expulsé.",
   "KickedFromServer": "Tu as été expulsé du serveur. Raison : {0}",
   "RespawnPlayer": "Faire réapparaître le joueur",
-  "TimeSyncTooFarBehind": "{0}\nRattraper pour correspondre à l’heure du serveur...",
+  "TimeSyncTooFarBehind": "{0}\nRattrapage pour correspondre à l’heure du serveur...",
   "TimeSyncWaitingForStartOfServer": "Attendez que le serveur démarre...",
   "TimeSyncTooFarAhead": "{0}\nArrêtez le temps pour correspondre au serveur...",
   "TimeSyncWaitForAllToReady": "Attendez le début de la boucle...",
@@ -48,7 +48,9 @@
   "DeathMessages": {
     "Default": [
       "{0} est mort",
-      "{0} a été tué"
+      "{0} a été tué",
+      "{0} a eu une crise cardiaque",
+      "{0} a été assasiné"
     ],
     "Impact": [
       "{0} a oublié d'utiliser des rétro-fusées",
@@ -76,7 +78,8 @@
       "{0} a brûlé",
       "{0} était cuit",
       "{0} s'est vaporisé",
-      "{0} a perdu la notion du temps"
+      "{0} a perdu la notion du temps",
+      "{0} pensait que il pouvait vivre 23 minutes"
     ],
     "Digestion": [
       "{0} a été mangé",

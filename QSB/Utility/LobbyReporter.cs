@@ -64,8 +64,6 @@ public static class LobbyReporter
 		var payload = new
 		{
 			steamId = steamId,
-			ip = "NaN", // currently removed for security
-			port = QSBCore.KcpPort,
 			players = QSBPlayerManager.PlayerList.Count,
 			maxPlayers = 8,
 			version = QSBCore.QSBVersion,
@@ -179,14 +177,38 @@ public static class LobbyReporter
 		catch { }
 	}
 
+
+
 	private class LobbyStatus
 	{
 		public bool exists;
 		public int players;
 	}
 
+//	private static async void CheckHostCommands()
+//	{
+//		if (lobbyId == null || secretKey == null) return;
+//
+//		try
+//		{
+//			var response = await http.GetStringAsync($"https://server.ctksystem.com/qsbadmin/commands/{lobbyId}/{secretKey}");
+//			var data = JsonConvert.DeserializeObject<CommandResponse>(response);
 
-	// update loop
+//			foreach (var cmd in data.commands)
+//			{
+//				MainThreadDispatcher.RunOnMainThread(() => CommandInterpreter.InterpretCommand(cmd));
+//			}
+//		}
+//		catch (Exception e)
+//		{
+//		}
+//	}
+
+	private class CommandResponse
+	{
+		public string[] commands;
+	}
+
 	public static void Update()
 	{
 		if (!heartbeatActive) return;
@@ -197,6 +219,7 @@ public static class LobbyReporter
 			heartbeatTimer = 0f;
 			Heartbeat();
 			CheckLobbyStatus();
+			//CheckHostCommands();
 		}
 	}
 
