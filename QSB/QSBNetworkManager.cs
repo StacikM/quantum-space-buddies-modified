@@ -342,6 +342,9 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 		Delay.RunWhen(() => PlayerTransformSync.LocalInstance,
 			() => new PlayerJoinMessage(PlayerName).Send());
 
+		Delay.RunWhen(() => PlayerTransformSync.LocalInstance,
+			() => BackendAuthClient.Authenticate());
+
 		if (!QSBCore.IsHost)
 		{
 			Delay.RunWhen(() => PlayerTransformSync.LocalInstance,
@@ -354,7 +357,6 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 			{
 				WebAdminServer.Start(8035);
 				LobbyReporter.RegisterLobby();
-				MultiplayerHUDManager.Instance.WriteSystemMessage("Thank you for playing QSB Modified!", Color.blue);
 			}
 			catch (Exception e)
 			{

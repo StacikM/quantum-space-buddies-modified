@@ -1,6 +1,8 @@
 ﻿using Mirror;
 using OWML.Common;
 using QSB.DeathSync.Messages;
+using QSB.EchoesOfTheEye.Ghosts;
+using QSB.EchoesOfTheEye.Ghosts.WorldObjects;
 using QSB.HUD;
 using QSB.Messaging;
 using QSB.Player;
@@ -13,6 +15,7 @@ using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 namespace QSB.Utility;
@@ -67,7 +70,7 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 			case "kill": KillPlayer(commandParts.Skip(1).ToArray()); break;
 			// the 2 above for some reasons arent synced with the clients
 
-			// ship commands, some work some not
+			// ship commands
 			case "ship": ShipCommand(commandParts.Skip(1).ToArray()); break;
 			// general
 			case "copy-id": CopySteamID(); break;
@@ -76,6 +79,21 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 			case "say": SayCommand(commandParts.Skip(1).ToArray()); break;
 			case "clearchat": ClearChatCommand(); break;
 
+			case "backendauth":
+				WriteToChat($"Backend Authentication is {(BackendAuthManager.Enabled ? "enabled" : "disabled")}.", Color.cyan);
+				break;
+			case "enablebackendauth":
+				BackendAuthManager.Enabled = true;
+				WriteToChat("Enabled Backend Authentication.", Color.green);
+				break;
+			case "disablebackendauth":
+				BackendAuthManager.Enabled = false;
+				WriteToChat("Disabled Backend Authentication.", Color.yellow);
+				break;
+			//case "spawnowl":
+			//	SpawnOwl();
+			//	break;
+			// was a fun idea but hard
 
 			default:
 				WriteToChat($"Unknown command \"{command}\".", Color.red);
@@ -158,12 +176,10 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 			return;
 		}
 
-
-		// this adds the player to the ban list
-		BanManager.Ban(player.PlayerId);
+		BackendAuthServer.BanPlayer(player, reason);
 		// disconnects the player
 		new PlayerKickMessage(player.PlayerId, $"WARNING: Server banned: {reason}").Send();
-		WriteToChat($"{player.Name} has been banned.\nReason: {reason}", Color.red);
+		WriteToChat($"{player.Name} has been banned.\nReason: {reason}\nWarning: this won't work without /enablebackendauth", Color.red);
 	}
 
 	private static void UnbanPlayer(string[] args)
@@ -334,6 +350,68 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 		WriteToChat($"Copied {id} to clipboard.", Color.green);
 	}
 
+	public static void SpawnOwl()
+	{
+		var host = QSBPlayerManager.LocalPlayer;
+		if (host?.Body == null)
+		{
+			DebugLog.ToConsole("[SpawnOwl] host doesn't exist??", OWML.Common.MessageType.Warning);
+			return;
+		}
+
+		Vector3 spawnPos = host.Body.transform.position + host.Body.transform.forward * 2f;
+
+		var ghost = QSBWorldSync.GetUnityObjects<GhostBrain>()
+			.FirstOrDefault(g => !g.gameObject.activeSelf);
+
+		if (ghost == null)
+		{
+			DebugLog.ToConsole("[SpawnOwl] all ghosts spawned cant take one", OWML.Common.MessageType.Warning);
+			return;
+		}
+
+		Delay.RunFramesLater(3, () =>
+		{
+			try
+			{
+				ghost.transform.position = spawnPos;
+
+				var ghostQSBBrain = ghost.GetWorldObject<QSBGhostBrain>();
+				var ghostGrab = ghost.GetWorldObject<QSBGhostGrabController>();
+
+				if (ghostQSBBrain == null || ghostGrab == null)
+				{
+					Delay.RunFramesLater(1, () => SpawnOwl());
+					return;
+				}
+
+				ghost.gameObject.SetActive(true);
+
+				var ghostDataField = typeof(QSBGhostBrain).GetField("_ghostData", BindingFlags.NonPublic | BindingFlags.Instance);
+				QSBGhostData ghostData = ghostDataField?.GetValue(ghostQSBBrain) as QSBGhostData;
+
+				if (ghostData == null)
+				{
+					ghostData = new QSBGhostData();
+					ghostDataField?.SetValue(ghostQSBBrain, ghostData);
+				}
+
+				// Ensure local player is registered
+				var localPlayer = QSBPlayerManager.LocalPlayer;
+				if (!ghostData.players.ContainsKey(localPlayer))
+				{
+					ghostData.players.Add(localPlayer, new GhostPlayer { player = localPlayer });
+				}
+
+				DebugLog.ToConsole("[SpawnOwl] Owl spawned.", OWML.Common.MessageType.Info);
+			}
+			catch (System.Exception e)
+			{
+				DebugLog.ToConsole($"[SpawnOwl] Exception while spawning owl: {e.Message}", OWML.Common.MessageType.Error);
+			}
+		});
+	}
+
 	#endregion
 
 	private void Awake()
@@ -343,20 +421,33 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 		{
 			if (!QSBCore.IsHost) return;
 
-			if (BanManager.IsBanned(player.PlayerId))
-			{
-				new PlayerKickMessage(player.PlayerId, "You are currently banned from this server. Try again later").Send();
-				DebugLog.ToConsole($"[Moderation] auto-kicked banned player {player.Name}");
-				return;
-			}
+//			if (BanManager.IsBanned(player.PlayerId))
+//			{
+//				new PlayerKickMessage(player.PlayerId, "You are currently banned from this server. Try again later").Send();
+//				DebugLog.ToConsole($"[Moderation] auto-kicked banned player {player.Name}");
+//				return;
+//			}
+// ban system disabled since player ids are session only fixed later using backend
 
 			if (ServerFreezeManager.IsFrozen)
 			{
 				new PlayerKickMessage(player.PlayerId, "Server is whitelisted. Please ask the host to write /unserverfreeze").Send(); // Au revoir
 				DebugLog.ToConsole($"[moderation] auto-kicked {player.Name} (server frozen)");
 			}
+			if (BackendAuthManager.Enabled)
+			{
+				Delay.RunFramesLater(3, () =>
+				{
+					if (!BackendAuthManager.IsAuthenticated(player.PlayerId))
+					{
+						new PlayerKickMessage(
+							player.PlayerId,
+							"Authentication required (either you are a script kid or your QSB is outdated)"
+						).Send();
+					}
+				});
+			}
 		};
-
 
 		// Clear bans and mutes on host leave
 		QSBPlayerManager.OnRemovePlayer += player =>

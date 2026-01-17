@@ -17,11 +17,11 @@ public static class LobbyReporter
 	private static readonly HttpClient http = new();
 
 	// lobby id to track
-	private static string lobbyId = null;
+	public static string lobbyId = null;
 	// DO NOT SHARE THIS WITH ANYBODY
 	// THIS WILL ALLOW A MALICIOUS ACTOR TO CONTROL YOUR SERVER
 	// this is securely stored on the server AND your host client
-	private static string secretKey = null;
+	public static string secretKey = null;
 	// heartbeat tracking
 	private static bool heartbeatActive = false;
 	// heart beat timer to prevent getting removed
@@ -185,24 +185,32 @@ public static class LobbyReporter
 		public int players;
 	}
 
-//	private static async void CheckHostCommands()
-//	{
-//		if (lobbyId == null || secretKey == null) return;
-//
-//		try
-//		{
-//			var response = await http.GetStringAsync($"https://server.ctksystem.com/qsbadmin/commands/{lobbyId}/{secretKey}");
-//			var data = JsonConvert.DeserializeObject<CommandResponse>(response);
+	private static async void CheckHostCommands()
+	{
+		if (lobbyId == null || secretKey == null) return;
 
-//			foreach (var cmd in data.commands)
-//			{
-//				MainThreadDispatcher.RunOnMainThread(() => CommandInterpreter.InterpretCommand(cmd));
-//			}
-//		}
-//		catch (Exception e)
-//		{
-//		}
-//	}
+		try
+		{
+			var response = await http.GetStringAsync($"https://server.ctksystem.com/qsbadmin/commands/{lobbyId}/{secretKey}");
+			DebugLog.ToConsole("[LobbyReporter] RAW COMMAND JSON: " + response, MessageType.Info);
+			var data = JsonConvert.DeserializeObject<CommandResponse>(response);
+			if (data?.commands == null)
+				DebugLog.ToConsole("[LobbyReporter] commands==null", MessageType.Error);
+			else
+				DebugLog.ToConsole("[LobbyReporter] commands.Count = " + data.commands.Length, MessageType.Info);
+
+
+			foreach (var cmd in data.commands)
+			{
+				MainThreadDispatcher.RunOnMainThread(() => CommandInterpreter.InterpretCommand(cmd));
+				DebugLog.ToConsole("[LobbyReporter] Executing command: " + cmd, MessageType.Info);
+
+			}
+		}
+		catch (Exception e)
+		{
+		}
+	}
 
 	private class CommandResponse
 	{
@@ -211,15 +219,19 @@ public static class LobbyReporter
 
 	public static void Update()
 	{
+		//DebugLog.ToConsole("[LobbyReporter] delta=" + Time.deltaTime, MessageType.Warning);
+
 		if (!heartbeatActive) return;
 
 		heartbeatTimer += Time.deltaTime;
+		//DebugLog.ToConsole($"[LobbyReporter] timer={heartbeatTimer:F2}", MessageType.Info);
 		if (heartbeatTimer >= 10f)
 		{
 			heartbeatTimer = 0f;
 			Heartbeat();
 			CheckLobbyStatus();
-			//CheckHostCommands();
+			CheckHostCommands();
+			//Debug.Log($"LobbyReporter Update: active={heartbeatActive}, id={lobbyId}, secret={(secretKey != null)}");
 		}
 	}
 
