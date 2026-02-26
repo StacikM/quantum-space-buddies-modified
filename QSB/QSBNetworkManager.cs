@@ -33,9 +33,11 @@ using QSB.Tools.ProbeTool.TransformSync;
 using QSB.Utility;
 using QSB.Utility.VariableSync;
 using QSB.WorldSync;
+using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -50,8 +52,6 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 	public event Action<TransportError, string> OnClientDisconnected;
 
 	public GameObject PlayerPrefab { get; private set; }
-	
-
 
 	public GameObject OrbPrefab { get; private set; }
 	public GameObject ShipPrefab { get; private set; }
@@ -300,11 +300,24 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 		DebugLog.DebugWrite("Network Manager ready.", MessageType.Success);
 	}
 
+	public class SteamIdHolder : MonoBehaviour
+	{
+		public ulong SteamId;
+	}
+
 	public override void OnServerAddPlayer(NetworkConnectionToClient connection) // Called on the server when a client joins
 	{
 
 		DebugLog.DebugWrite("OnServerAddPlayer", MessageType.Info);
 		base.OnServerAddPlayer(connection);
+
+		ulong steamId = GetSteamId(connection);
+
+		print(steamId);
+
+		SteamIdMapper.SetConnection(connection.connectionId, steamId);
+
+		DebugLog.ToConsole($"[Steam] Conn {connection.connectionId} → {steamId}");
 
 		NetworkServer.Spawn(Instantiate(_probePrefab), connection);
 	}
@@ -314,7 +327,7 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 		QSBCore.DefaultServerIP = networkAddress;
 		var config = QSBCore.Helper.Config;
 		config.SetSettingsValue("defaultServerIP", networkAddress);
-		QSBCore.Helper.Storage.Save(config, Constants.ModConfigFileName);
+		QSBCore.Helper.Storage.Save(config, OWML.Common.Constants.ModConfigFileName);
 	}
 
 	public override void OnClientConnect() // Called on the client when connecting to a server
@@ -465,6 +478,28 @@ public class QSBNetworkManager : NetworkManager, IAddComponentOnStart
 		}
 
 		base.OnServerDisconnect(conn);
+	}
+
+	public static ulong GetSteamId(NetworkConnectionToClient conn)
+	{
+		var field = conn.GetType().GetField("m_Connection", BindingFlags.NonPublic | BindingFlags.Instance);
+		if (field == null) return 0;
+
+		var steamConn = field.GetValue(conn);
+		if (steamConn == null) return 0;
+
+		var infoField = steamConn.GetType().GetField("m_info", BindingFlags.NonPublic | BindingFlags.Instance);
+		var info = infoField?.GetValue(steamConn);
+		if (info == null) return 0;
+
+		var identityField = info.GetType().GetField("m_identity", BindingFlags.NonPublic | BindingFlags.Instance);
+		var identity = identityField?.GetValue(info);
+		if (identity == null) return 0;
+
+		if (identity is SteamNetworkingIdentity steamIdentity)
+			return steamIdentity.GetSteamID().m_SteamID;
+
+		return 0;
 	}
 
 	public override void OnStopServer()

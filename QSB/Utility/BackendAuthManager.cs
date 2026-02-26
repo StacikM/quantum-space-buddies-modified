@@ -3,6 +3,13 @@ using QSB.Player.Messages;
 using System.Collections.Generic;
 using QSB.Messaging;
 using QSB.Utility;
+using OWML.Common;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+
 
 namespace QSB.Utility;
 
@@ -13,7 +20,11 @@ public static class BackendAuthManager
 	// players that successfully authenticated with backend
 	private static readonly HashSet<uint> authenticatedPlayers = new();
 
-	public static void Enable() => Enabled = true;
+	public static void Enable()
+	{
+		Enabled = false;
+		// disabled permamently
+	}
 	public static void Disable()
 	{
 		Enabled = false;

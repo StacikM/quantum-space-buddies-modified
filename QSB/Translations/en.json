@@ -114,7 +114,8 @@
       "{0} went kaboom",
       "{0} was fried",
       "{0} died due to explosion",
-      "{0} used the wrong artifact"
+      "{0} used the wrong artifact",
+      "{0} wanted to play with the owlks"
     ],
     "CrushedByElevator": [
       "{0} was crushed",

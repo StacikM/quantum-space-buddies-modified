@@ -10,6 +10,7 @@ using QSB.Player.Messages;
 using QSB.RespawnSync;
 using QSB.RespawnSync.Messages;
 using QSB.Utility;
+using QSB.Utility.Messages;
 using QSB.WorldSync;
 using Steamworks;
 using System;
@@ -22,12 +23,35 @@ namespace QSB.Utility;
 
 public static class BanManager
 {
-	private static readonly HashSet<uint> bannedPlayers = new();
+	private static readonly HashSet<ulong> bannedPlayers = new();
 
-	public static bool IsBanned(uint playerId) => bannedPlayers.Contains(playerId);
-	public static void Ban(uint playerId) => bannedPlayers.Add(playerId);
-	public static void Unban(uint playerId) => bannedPlayers.Remove(playerId);
+	public static bool IsBanned(ulong steamId) => bannedPlayers.Contains(steamId);
+	public static void Ban(ulong steamId) => bannedPlayers.Add(steamId);
+	public static void Unban(ulong steamId) => bannedPlayers.Remove(steamId);
 	public static void Clear() => bannedPlayers.Clear();
+}
+
+public static class SteamIdMapper
+{
+	private static readonly Dictionary<int, ulong> connToSteam = new();
+	private static readonly Dictionary<uint, ulong> playerToSteam = new();
+
+	public static void SetConnection(int connId, ulong steamId)
+		=> connToSteam[connId] = steamId;
+
+	public static void LinkPlayer(uint playerId, int connId)
+	{
+		if (connToSteam.TryGetValue(connId, out var steamId))
+		{
+			playerToSteam[playerId] = steamId;
+		}
+	}
+
+	public static ulong Get(uint playerId)
+		=> playerToSteam.TryGetValue(playerId, out var id) ? id : 0;
+
+	public static void Remove(uint playerId)
+		=> playerToSteam.Remove(playerId);
 }
 
 public static class ServerFreezeManager
@@ -38,6 +62,13 @@ public static class ServerFreezeManager
 	public static void Unfreeze() => IsFrozen = false;
 }
 
+//fun fact im doing this because i want to sacrifise my ram for a dedicated server and i dont want people sending me into another universe
+public static class EyeManager
+{
+	public static bool IsEyeDisabled { get; private set; } = false;
+	public static void DisableEye() => IsEyeDisabled = true;
+	public static void EnableEye() => IsEyeDisabled = false;
+}
 public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 {
 
@@ -45,6 +76,13 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 	{
 		if (string.IsNullOrEmpty(message) || message[0] != '/')
 			return false;
+
+		//no commaneds for no host
+		if (!QSBCore.IsHost)
+		{
+			WriteToChat("Only the host can use commands.", Color.red);
+			return true;
+		}
 
 		var commandParts = message.Substring(1).Split(' ');
 		var command = commandParts[0].ToLowerInvariant();
@@ -83,12 +121,21 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 				WriteToChat($"Backend Authentication is {(BackendAuthManager.Enabled ? "enabled" : "disabled")}.", Color.cyan);
 				break;
 			case "enablebackendauth":
-				BackendAuthManager.Enabled = true;
-				WriteToChat("Enabled Backend Authentication.", Color.green);
+				WriteToChat("Backend Authentication is no longer supported", Color.green);
 				break;
 			case "disablebackendauth":
-				BackendAuthManager.Enabled = false;
-				WriteToChat("Disabled Backend Authentication.", Color.yellow);
+				WriteToChat("Backend Authentication is no longer supported", Color.yellow);
+				break;
+			case "disableeye":
+				EyeManager.DisableEye();
+				WriteToChat("The Eye has been disabled. This may cause softlocks if the player is in the eye or tries to enter it.", Color.yellow);
+				break;
+			case "enableeye":
+				EyeManager.EnableEye();
+				WriteToChat("The Eye has been enabled again. It will function as normal.", Color.green);
+				break;
+			case "shutdown":
+				ShutdownServer();
 				break;
 			//case "spawnowl":
 			//	SpawnOwl();
@@ -176,7 +223,8 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 			return;
 		}
 
-		BackendAuthServer.BanPlayer(player, reason);
+		ulong steamId = SteamIdMapper.Get(player.PlayerId);
+		BanManager.Ban(steamId);
 		// disconnects the player
 		new PlayerKickMessage(player.PlayerId, $"WARNING: Server banned: {reason}").Send();
 		WriteToChat($"{player.Name} has been banned.\nReason: {reason}\nWarning: this won't work without /enablebackendauth", Color.red);
@@ -272,7 +320,6 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 
 	#region Server Control
 
-	// one time my friend was 454395734875349 seconds behind the server when i used it and he rejoined, don't know if its QSB or the server freeze
 	private static void FreezeServer()
 	{
 		ServerFreezeManager.Freeze();
@@ -284,6 +331,18 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 	{
 		ServerFreezeManager.Unfreeze();
 		WriteToChat("Server is now unfrozen. Players may join again.", Color.green);
+	}
+
+	private static void ShutdownServer()
+	{
+
+		WriteToChat("Server is shutting down. Goodbye!", Color.red);
+		QSBNetworkManager.singleton.StopHost();
+	}
+
+	private static void ResetLoop()
+	{
+		new DebugTriggerSupernovaMessage().Send();
 	}
 
 	#endregion
@@ -421,13 +480,21 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 		{
 			if (!QSBCore.IsHost) return;
 
-//			if (BanManager.IsBanned(player.PlayerId))
-//			{
-//				new PlayerKickMessage(player.PlayerId, "You are currently banned from this server. Try again later").Send();
-//				DebugLog.ToConsole($"[Moderation] auto-kicked banned player {player.Name}");
-//				return;
-//			}
-// ban system disabled since player ids are session only fixed later using backend
+			SteamIdMapper.LinkPlayer(player.PlayerId, (int)player.PlayerId);
+
+			ulong steamId = SteamIdMapper.Get(player.PlayerId);
+
+			DebugLog.ToConsole($"[Steam] Linked {player.Name} → {steamId}");
+
+			if (BanManager.IsBanned(steamId))
+			{
+				new PlayerKickMessage(
+					player.PlayerId,
+					"You are banned from this server."
+				).Send();
+
+				DebugLog.ToConsole($"[Moderation] blocked {player.Name}");
+			}
 
 			if (ServerFreezeManager.IsFrozen)
 			{

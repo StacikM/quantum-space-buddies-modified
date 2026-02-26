@@ -116,7 +116,8 @@
       "{0} est allé kaboom",
       "{0} a été frit",
       "{0} est mort causé par une explosion",
-      "{0} a utilisé le mauvais artefact"
+      "{0} a utilisé le mauvais artefact",
+      "{0} a essayé de toucher un hibou"
     ],
     "CrushedByElevator": [
       "{0} a été écrasé",

@@ -17,6 +17,7 @@ public class DebugChangeSceneMessage : QSBMessage<bool>
 		}
 		else
 		{
+			if (EyeManager.IsEyeDisabled) { return; }
 			PlayerData.SaveWarpedToTheEye(60);
 			LoadManager.LoadSceneAsync(OWScene.EyeOfTheUniverse, true, LoadManager.FadeType.ToWhite);
 		}
