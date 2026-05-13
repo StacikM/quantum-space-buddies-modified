@@ -88,4 +88,5 @@ public partial class PlayerInfo
 	public GameObject RoastingStick { get; set; }
 	public QSBProbeLauncher ProbeLauncherEquipped { get; set; }
 	public bool IsTranslating { get; set; }
+	public ulong SteamId { get; internal set; }
 }

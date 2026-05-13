@@ -223,8 +223,7 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 			return;
 		}
 
-		ulong steamId = SteamIdMapper.Get(player.PlayerId);
-		BanManager.Ban(steamId);
+		BanManager.Ban(player.SteamId);
 		// disconnects the player
 		new PlayerKickMessage(player.PlayerId, $"WARNING: Server banned: {reason}").Send();
 		WriteToChat($"{player.Name} has been banned.\nReason: {reason}\nWarning: this won't work without /enablebackendauth", Color.red);
@@ -244,7 +243,7 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 
 
 		// removes from the list
-		BanManager.Unban(player.PlayerId);
+		BanManager.Unban(player.SteamId);
 		WriteToChat($"{player.Name} has been unbanned.", Color.green);
 	}
 
@@ -480,39 +479,23 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 		{
 			if (!QSBCore.IsHost) return;
 
-			SteamIdMapper.LinkPlayer(player.PlayerId, (int)player.PlayerId);
+			DebugLog.ToConsole($"[Steam] Player {player.Name} → {player.SteamId}");
 
-			ulong steamId = SteamIdMapper.Get(player.PlayerId);
-
-			DebugLog.ToConsole($"[Steam] Linked {player.Name} → {steamId}");
-
-			if (BanManager.IsBanned(steamId))
+			if (BanManager.IsBanned(player.SteamId))
 			{
 				new PlayerKickMessage(
 					player.PlayerId,
-					"You are banned from this server."
+					"You are banned from this server by the host. You may not join until the server host unbans you or restarts the session."
 				).Send();
 
 				DebugLog.ToConsole($"[Moderation] blocked {player.Name}");
+				return;
 			}
 
 			if (ServerFreezeManager.IsFrozen)
 			{
 				new PlayerKickMessage(player.PlayerId, "Server is whitelisted. Please ask the host to write /unserverfreeze").Send(); // Au revoir
 				DebugLog.ToConsole($"[moderation] auto-kicked {player.Name} (server frozen)");
-			}
-			if (BackendAuthManager.Enabled)
-			{
-				Delay.RunFramesLater(3, () =>
-				{
-					if (!BackendAuthManager.IsAuthenticated(player.PlayerId))
-					{
-						new PlayerKickMessage(
-							player.PlayerId,
-							"Authentication required (either you are a script kid or your QSB is outdated)"
-						).Send();
-					}
-				});
 			}
 		};
 

@@ -5,6 +5,8 @@ using QSB.HUD;
 using QSB.Localization;
 using QSB.Messaging;
 using QSB.Utility;
+using Steamworks;
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -17,6 +19,7 @@ public class PlayerJoinMessage : QSBMessage
 	private string GameVersion;
 	private bool DlcInstalled;
 	private bool NewHorizonsInstalled;
+	private ulong SteamId;
 
 	private int[] AddonHashes;
 
@@ -27,6 +30,7 @@ public class PlayerJoinMessage : QSBMessage
 		GameVersion = QSBCore.GameVersion;
 		DlcInstalled = QSBCore.DLCInstalled;
 		NewHorizonsInstalled = QSBCore.QSBNHAssembly != null;
+		SteamId = GetLocalSteamId();
 
 		AddonHashes = QSBCore.Addons.Keys
 			.Except(QSBCore.CosmeticAddons)
@@ -34,6 +38,19 @@ public class PlayerJoinMessage : QSBMessage
 			.ToArray();
 	}
 
+	private static ulong GetLocalSteamId()
+	{
+		try
+		{
+			if (!QSBCore.IsStandalone)
+				return SteamUser.GetSteamID().m_SteamID;
+		}
+		catch (Exception ex)
+		{
+			DebugLog.ToConsole($"Error getting local Steam ID: {ex}", MessageType.Warning);
+		}
+		return 0;
+	}
 	public override void Serialize(NetworkWriter writer)
 	{
 		base.Serialize(writer);
@@ -42,6 +59,7 @@ public class PlayerJoinMessage : QSBMessage
 		writer.Write(GameVersion);
 		writer.Write(DlcInstalled);
 		writer.Write(NewHorizonsInstalled);
+		writer.Write(SteamId);
 
 		writer.Write(AddonHashes);
 	}
@@ -54,6 +72,7 @@ public class PlayerJoinMessage : QSBMessage
 		GameVersion = reader.ReadString();
 		DlcInstalled = reader.Read<bool>();
 		NewHorizonsInstalled = reader.Read<bool>();
+		SteamId = reader.Read<ulong>();
 
 		AddonHashes = reader.Read<int[]>();
 	}
@@ -112,6 +131,7 @@ public class PlayerJoinMessage : QSBMessage
 
 		var player = QSBPlayerManager.GetPlayer(From);
 		player.Name = PlayerName;
+		player.SteamId = SteamId;
 		MultiplayerHUDManager.Instance.WriteSystemMessage(string.Format(QSBLocalization.Current.PlayerJoinedTheGame, player.Name), Color.green);
 		DebugLog.DebugWrite($"{player} joined. qsbVersion:{QSBVersion}, gameVersion:{GameVersion}, dlcInstalled:{DlcInstalled}", MessageType.Info);
 	}
@@ -120,5 +140,6 @@ public class PlayerJoinMessage : QSBMessage
 	{
 		var player = QSBPlayerManager.GetPlayer(QSBPlayerManager.LocalPlayerId);
 		player.Name = PlayerName;
+		player.SteamId = GetLocalSteamId();
 	}
 }
