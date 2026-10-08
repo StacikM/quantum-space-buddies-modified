@@ -44,10 +44,26 @@ public class ShipCustomAttach : MonoBehaviour
 		}
 	}
 
+	private void OnDisable()
+	{
+		if (_playerAttachPoint && _playerAttachPoint.enabled && Locator.GetPlayerBody())
+		{
+			_playerAttachPoint.DetachPlayer();
+		}
+	}
+
 	private void Update()
 	{
 		_attachPrompt.SetVisibility(false);
 		_detachPrompt.SetVisibility(false);
+		if (ShipManager.Instance.IsShipWrecked)
+		{
+			if (_playerAttachPoint.enabled)
+			{
+				_playerAttachPoint.DetachPlayer();
+			}
+			return;
+		}
 		// dont show prompt if paused or something
 		if (!OWInput.IsInputMode(InputMode.Character))
 		{

@@ -1,6 +1,7 @@
 ﻿using Mirror;
 using OWML.Common;
 using QSB.DeathSync.Messages;
+using QSB.ClientServerStateSync;
 using QSB.EchoesOfTheEye.Ghosts;
 using QSB.EchoesOfTheEye.Ghosts.WorldObjects;
 using QSB.HUD;
@@ -76,6 +77,11 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 	{
 		if (string.IsNullOrEmpty(message) || message[0] != '/')
 			return false;
+
+		if (RestartLoopVoteManager.TryInterpretCommand(message))
+		{
+			return true;
+		}
 
 		//no commaneds for no host
 		if (!QSBCore.IsHost)
@@ -367,9 +373,32 @@ public class CommandInterpreter : MonoBehaviour, IAddComponentOnStart
 
 	private static void RevivePlayer(string[] args)
 	{
-		if (args.Length == 0) return;
-		var player = QSBPlayerManager.PlayerList.FirstOrDefault(p => p.Name.Equals(args[0], System.StringComparison.OrdinalIgnoreCase));
-		if (player == null) { WriteToChat($"Player {args[0]} not found.", Color.red); return; }
+		if (args.Length == 0)
+		{
+			WriteToChat("Usage: /revive <playerName>", Color.yellow);
+			return;
+		}
+
+		if (QSBSceneManager.CurrentScene != OWScene.SolarSystem || !QSBWorldSync.AllObjectsReady
+			|| ServerStateManager.Instance == null
+			|| ServerStateManager.Instance.GetServerState() != ServerState.InSolarSystem)
+		{
+			WriteToChat("Players can only be revived during an active loop.", Color.yellow);
+			return;
+		}
+
+		var name = string.Join(" ", args);
+		var player = QSBPlayerManager.PlayerList.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+		if (player == null)
+		{
+			WriteToChat($"Player {name} not found.", Color.red);
+			return;
+		}
+		if (!player.IsDead)
+		{
+			WriteToChat($"{player.Name} is already alive.", Color.yellow);
+			return;
+		}
 
 		new PlayerRespawnMessage(player.PlayerId).Send();
 		WriteToChat($"Revived {player.Name}", Color.green);

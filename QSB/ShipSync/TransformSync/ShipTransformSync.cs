@@ -1,4 +1,5 @@
 using QSB.Syncs.Sectored.Rigidbodies;
+using QSB.Player;
 using QSB.Utility;
 using UnityEngine;
 
@@ -51,13 +52,17 @@ public class ShipTransformSync : SectoredRigidbodySync
 	protected override void ApplyToAttached()
 	{
 		ApplyToSector();
-		if (!ReferenceTransform)
+		if (!ReferenceTransform || !ReferenceRigidbody)
 		{
 			return;
 		}
 
 		var targetPos = ReferenceTransform.FromRelPos(UseInterpolation ? SmoothPosition : transform.position);
 		var targetRot = ReferenceTransform.FromRelRot(UseInterpolation ? SmoothRotation : transform.rotation);
+		var playerBody = ShouldMovePlayer && !PlayerState.IsAttached() ? Locator.GetPlayerBody() : null;
+		var relativeVelocity = playerBody
+			? AttachedRigidbody.ToRelVel(playerBody.GetVelocity(), playerBody.GetPosition())
+			: Vector3.zero;
 
 		if (ShouldMovePlayer)
 		{
@@ -67,7 +72,6 @@ public class ShipTransformSync : SectoredRigidbodySync
 
 				if (!PlayerState.IsAttached())
 				{
-					var playerBody = Locator.GetPlayerBody();
 					var relPos = AttachedTransform.ToRelPos(playerBody.GetPosition());
 					var relRot = AttachedTransform.ToRelRot(playerBody.GetRotation());
 
@@ -101,6 +105,10 @@ public class ShipTransformSync : SectoredRigidbodySync
 
 		SetVelocity(AttachedRigidbody, targetVelocity);
 		AttachedRigidbody.SetAngularVelocity(targetAngularVelocity);
+		if (playerBody)
+		{
+			playerBody.SetVelocity(AttachedRigidbody.FromRelVel(relativeVelocity, playerBody.GetPosition()));
+		}
 	}
 
 	#region copied from OWRigidbody
@@ -132,12 +140,7 @@ public class ShipTransformSync : SectoredRigidbodySync
 	#endregion
 
 
-	/// <summary>
-	/// move if inside the ship
-	/// or in space near the ship
-	/// </summary>
 	private bool ShouldMovePlayer =>
-		PlayerState.IsInsideShip() ||
-		(PlayerState.InZeroG() && Vector3.Distance(AttachedTransform.position, Locator.GetPlayerBody().GetPosition()) < 100);
+		PlayerState.IsInsideShip() && !QSBPlayerManager.LocalPlayer.IsDead;
 	protected override bool UseInterpolation => !ShouldMovePlayer;
 }

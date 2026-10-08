@@ -184,11 +184,19 @@ public abstract class SyncBase : QSBNetworkTransform
 		}
 	}
 
-	protected virtual void Init() =>
+	protected virtual void Init()
+	{
 		AttachedTransform = InitAttachedTransform();
+		ResetSyncState();
+	}
 
 	protected virtual void Uninit()
 	{
+		ResetSyncState();
+		_interpolating = false;
+		_positionSmoothVelocity = Vector3.zero;
+		_rotationSmoothVelocity = default;
+		_prevDistance = 0;
 		if (IsPlayerObject && !isOwned && AttachedTransform)
 		{
 			Destroy(AttachedTransform.gameObject);
@@ -294,6 +302,9 @@ public abstract class SyncBase : QSBNetworkTransform
 		}
 
 		ReferenceTransform = referenceTransform;
+		_positionSmoothVelocity = Vector3.zero;
+		_rotationSmoothVelocity = default;
+		_prevDistance = 0;
 		if (IsPlayerObject && !isOwned && AttachedTransform)
 		{
 			AttachedTransform.parent = ReferenceTransform;

@@ -295,7 +295,7 @@ public class RespawnOnDeath : MonoBehaviour
 
 	void OnGUI()
 	{
-		if (PlayerTransformSync.LocalInstance == null || ShipManager.Instance.ShipCockpitUI == null)
+		if (PlayerTransformSync.LocalInstance == null || ShipManager.Instance == null || _deadTextStyle == null)
 		{
 			return;
 		}
@@ -310,7 +310,7 @@ public class RespawnOnDeath : MonoBehaviour
 			// it is good day to be not dead
 
 			var secondText = ShipManager.Instance.IsShipWrecked
-				? string.Format(QSBLocalization.Current.WaitingForAllToDie, QSBPlayerManager.PlayerList.Count(x => !x.IsDead))
+				? "Waiting for the host to revive you or for the loop to end." //sm1 needs to translate this later
 				: QSBLocalization.Current.WaitingForRespawn;
 
 			GUI.Label(

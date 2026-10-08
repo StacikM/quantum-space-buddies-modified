@@ -10,8 +10,24 @@ public abstract class QSBNetworkBehaviour : NetworkBehaviour
 	protected virtual float SendInterval => 0.1f;
 	protected virtual bool UseReliableRpc => false;
 
-	private double _lastSendTime;
+	private double _lastSendTime = double.NegativeInfinity;
 	private byte[] _lastKnownData;
+	private double _lastFullSendTime;
+	private bool _forceSend = true;
+
+	protected void ResetSyncState()
+	{
+		_lastKnownData = null;
+		_lastSendTime = double.NegativeInfinity;
+		_lastFullSendTime = double.NegativeInfinity;
+		_forceSend = true;
+	}
+
+	public override void OnStartAuthority()
+	{
+		base.OnStartAuthority();
+		ResetSyncState();
+	}
 
 	public override void OnStartClient()
 	{
@@ -40,9 +56,14 @@ public abstract class QSBNetworkBehaviour : NetworkBehaviour
 
 	protected virtual void Update()
 	{
+		var wasValid = IsValid;
 		IsValid = CheckValid();
 		if (!IsValid)
 		{
+			if (wasValid)
+			{
+				ResetSyncState();
+			}
 			return;
 		}
 
@@ -55,7 +76,9 @@ public abstract class QSBNetworkBehaviour : NetworkBehaviour
 		{
 			_lastSendTime = NetworkTime.localTime;
 
-			if (!HasChanged())
+			var changed = HasChanged();
+			var fullSend = _forceSend || NetworkTime.localTime >= _lastFullSendTime + 1;
+			if (!changed && !fullSend)
 			{
 				return;
 			}
@@ -73,10 +96,18 @@ public abstract class QSBNetworkBehaviour : NetworkBehaviour
 			{
 				CmdSendDataUnreliable(data);
 			}
+			_forceSend = false;
+			if (fullSend)
+			{
+				_lastFullSendTime = NetworkTime.localTime;
+			}
 
 			if (QSBCore.IsHost)
 			{
-				_lastKnownData ??= new byte[data.Count];
+				if (_lastKnownData == null || _lastKnownData.Length != data.Count)
+				{
+					_lastKnownData = new byte[data.Count];
+				}
 				Array.Copy(data.Array!, data.Offset, _lastKnownData, 0, data.Count);
 			}
 		}
@@ -124,7 +155,10 @@ public abstract class QSBNetworkBehaviour : NetworkBehaviour
 
 		if (QSBCore.IsHost)
 		{
-			_lastKnownData ??= new byte[data.Count];
+			if (_lastKnownData == null || _lastKnownData.Length != data.Count)
+			{
+				_lastKnownData = new byte[data.Count];
+			}
 			Array.Copy(data.Array!, data.Offset, _lastKnownData, 0, data.Count);
 		}
 

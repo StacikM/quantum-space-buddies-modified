@@ -45,7 +45,9 @@ public class ShipManager : WorldObjectManager
 			_currentFlyer = value;
 		}
 	}
-	public bool IsShipWrecked => _shipDestroyed || ShipCockpitUI._shipDamageCtrlr.IsDestroyed();
+	public bool IsShipWrecked => _shipDestroyed || !Locator.GetShipBody()
+		|| !Locator.GetShipBody().gameObject.activeInHierarchy
+		|| (ShipCockpitUI && ShipCockpitUI._shipDamageCtrlr.IsDestroyed());
 
 	private readonly List<PlayerInfo> _playersInShip = new();
 
@@ -61,6 +63,7 @@ public class ShipManager : WorldObjectManager
 
 	public void OnDestroy()
 	{
+		QSBPlayerManager.OnRemovePlayer -= OnRemovePlayer;
 		GlobalMessenger.RemoveListener("ShipDestroyed", OnShipDestroyed);
 	}
 
@@ -83,6 +86,8 @@ public class ShipManager : WorldObjectManager
 	public override async UniTask BuildWorldObjects(OWScene scene, CancellationToken ct)
 	{
 		_shipDestroyed = false;
+		_currentFlyer = uint.MaxValue;
+		_playersInShip.Clear();
 
 		var shipBody = Locator.GetShipBody();
 		if (shipBody == null)
@@ -171,7 +176,7 @@ public class ShipManager : WorldObjectManager
 	public void AddPlayerToShip(PlayerInfo player)
 	{
 		player.IsInShip = true;
-		_playersInShip.Add(player);
+		_playersInShip.SafeAdd(player);
 		UpdateElectricalComponent();
 	}
 

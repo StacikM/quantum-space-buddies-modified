@@ -90,15 +90,15 @@ public class DeathPatches : QSBPatch
 			}
 			else if (!RespawnOnDeath.Instance.AllowedDeathTypes.Contains(__instance._deathType))
 			{
-				RespawnOnDeath.Instance.ResetPlayer();
-				QSBPlayerManager.LocalPlayer.IsDead = true;
-				var playerId = QSBPlayerManager.LocalPlayerId;
-				new PlayerDeathMessage(playerId, __instance._deathType).Send();
 				if (PlayerAttachWatcher.Current)
 				{
 					PlayerAttachWatcher.Current.DetachPlayer();
 				}
 
+				QSBPlayerManager.LocalPlayer.IsDead = true;
+				RespawnOnDeath.Instance.ResetPlayer();
+				var playerId = QSBPlayerManager.LocalPlayerId;
+				new PlayerDeathMessage(playerId, __instance._deathType).Send();
 				return false;
 			}
 

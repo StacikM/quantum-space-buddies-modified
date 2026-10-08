@@ -13,6 +13,7 @@ public abstract class BaseSectoredSync : SyncBase
 	public QSBSectorDetector SectorDetector { get; private set; }
 
 	private int _sectorId = -1;
+	private int _prevSectorId = -1;
 
 	public override void OnStartClient()
 	{
@@ -34,9 +35,18 @@ public abstract class BaseSectoredSync : SyncBase
 
 		SectorDetector.Uninit();
 		SetReferenceSector(null);
+		_sectorId = -1;
 	}
 
 	protected void GetFromSector() => _sectorId = ReferenceSector?.ObjectId ?? -1;
+
+	protected override bool HasChanged() => base.HasChanged() || _sectorId != _prevSectorId;
+
+	protected override void UpdatePrevData()
+	{
+		base.UpdatePrevData();
+		_prevSectorId = _sectorId;
+	}
 
 	protected override void Serialize(NetworkWriter writer)
 	{
@@ -54,6 +64,7 @@ public abstract class BaseSectoredSync : SyncBase
 	{
 		if (_sectorId == -1)
 		{
+			SetReferenceSector(null);
 			return;
 		}
 

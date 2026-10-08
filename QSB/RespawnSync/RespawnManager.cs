@@ -5,6 +5,7 @@ using QSB.Patches;
 using QSB.Player;
 using QSB.Player.TransformSync;
 using QSB.RespawnSync.Messages;
+using QSB.ShipSync;
 using QSB.Utility;
 using System.Collections.Generic;
 using System.Linq;
@@ -125,13 +126,37 @@ public class RespawnManager : MonoBehaviour, IAddComponentOnStart
 		Delay.RunNextFrame(() => GlobalMessenger.FireEvent("TriggerObservatoryMap"));
 	}
 
-	public void Respawn()
+	public bool Respawn()
 	{
 		var mapController = FindObjectOfType<MapController>();
-		QSBPatchManager.DoUnpatchType(QSBPatchTypes.RespawnTime);
-
 		var playerSpawner = FindObjectOfType<PlayerSpawner>();
-		playerSpawner.DebugWarp(playerSpawner.GetSpawnPoint(SpawnLocation.Ship));
+		if (!playerSpawner || !mapController)
+		{
+			return false;
+		}
+
+		var atTimberHearth = ShipManager.Instance == null || ShipManager.Instance.IsShipWrecked;
+		var spawnPoint = atTimberHearth ? null : playerSpawner.GetSpawnPoint(SpawnLocation.Ship);
+		if (!spawnPoint || !spawnPoint.gameObject.activeInHierarchy)
+		{
+			atTimberHearth = true;
+			spawnPoint = playerSpawner._spawnList?.FirstOrDefault(point => point
+				&& point.GetSpawnLocation() == SpawnLocation.TimberHearth
+				&& !point.IsShipSpawn() && point.gameObject.activeInHierarchy);
+		}
+		if (!spawnPoint)
+		{
+			return false;
+		}
+
+		if (PlayerAttachWatcher.Current)
+		{
+			PlayerAttachWatcher.Current.DetachPlayer();
+		}
+		QSBPatchManager.DoUnpatchType(QSBPatchTypes.RespawnTime);
+		playerSpawner.DebugWarp(spawnPoint);
+		Locator.GetPlayerBody().SetVelocity(spawnPoint.GetPointVelocity());
+		Locator.GetPlayerBody().SetAngularVelocity(Vector3.zero);
 
 		mapController.ExitMapView();
 
@@ -139,12 +164,17 @@ public class RespawnManager : MonoBehaviour, IAddComponentOnStart
 		cameraEffectController.OpenEyes(1f);
 
 		OWInput.ChangeInputMode(InputMode.Character);
+		if (atTimberHearth)
+		{
+			Locator.GetPlayerSuit().SuitUp(false, true, true);
+		}
 
 		var mixer = Locator.GetAudioMixer();
 		mixer._deathMixed = false;
 		mixer._nonEndTimesVolume.FadeTo(1, 0.5f);
 		mixer._endTimesVolume.FadeTo(1, 0.5f);
 		mixer.UnmixMap();
+		return true;
 	}
 
 	public void OnPlayerDeath(PlayerInfo player)
@@ -185,7 +215,11 @@ public class RespawnManager : MonoBehaviour, IAddComponentOnStart
 
 	public void RespawnSomePlayer()
 	{
-		var playerToRespawn = _playersPendingRespawn.First();
+		var playerToRespawn = _playersPendingRespawn.FirstOrDefault();
+		if (playerToRespawn == null)
+		{
+			return;
+		}
 
 		if (!playerToRespawn.IsDead)
 		{

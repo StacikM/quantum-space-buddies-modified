@@ -26,7 +26,7 @@ public class PlayerAttachWatcher : QSBPatch
 	[HarmonyPatch(nameof(PlayerAttachPoint.DetachPlayer))]
 	private static void DetachPlayer(PlayerAttachPoint __instance)
 	{
-		if (!__instance.enabled)
+		if (!__instance.enabled || Current != __instance)
 		{
 			return;
 		}
